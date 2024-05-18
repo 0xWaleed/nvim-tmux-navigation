@@ -5,6 +5,7 @@ local M = {}
 -- default configuration, can be changed through the setup function
 local config = {
     disable_when_zoomed = false,
+    disable_vim = false,
     keybindings = {}
 }
 
@@ -33,7 +34,7 @@ local function tmux_navigate(direction)
         if is_last_win then
             pcall(vim.cmd, 'wincmd t')
             util.tmux_change_pane(direction)
-        else
+        elseif not config.disable_vim then
             vim_navigate(direction)
         end
 
@@ -43,7 +44,7 @@ local function tmux_navigate(direction)
         -- to tmux; otherwise, just issue a last pane command in vim
         if tmux_control == true then
             util.tmux_change_pane(direction)
-        elseif tmux_control == false then
+        elseif tmux_control == false and not config.disable_vim then
             vim_navigate(direction)
         end
 
@@ -53,8 +54,10 @@ local function tmux_navigate(direction)
         -- window after issuing a vim navigation command
         local winnr = vim.fn.winnr()
 
+        if not config.disable_vim then
+            vim_navigate(direction)
+        end
         -- try to navigate normally
-        vim_navigate(direction)
 
         -- if we're in the same window after navigating
         local is_same_winnr = (winnr == vim.fn.winnr())
@@ -76,6 +79,7 @@ function M.setup(user_config)
 
     -- keybindings for the navigation
     config.keybindings = user_config.keybindings or {}
+    config.disable_vim = user_config.disable_vim or false
 
     -- loop through the keybindings and map them
     for func, mapping in pairs(config.keybindings) do
